@@ -3,14 +3,16 @@ import requests
 import psycopg2
 
 
-def get_vacs(data, employer='сбер', quantity=100):
-    emps = {'сбер': 3529,
-            'т-банк': 78638}
+def get_vacs(employer='Сбер', quantity=100):
+    employer = employer.lower()
+    employer = employer.capitalize()
+    emps = {'Сбер': 3529,
+            'Т-банк': 78638,
+            'Газпром банк': 3388}
 
-    if data == 'new':
-        response = requests.get('https://api.hh.ru/vacancies', params={'text': '', 'per_page': quantity, 'employer_id': emps[employer.lower()]})#, 'employer_id': (3529, 78638, 1740, 1122462, 3388)})
-        with open('vacs.json', 'w') as f:
-            json.dump(response.json(),f)
+    response = requests.get('https://api.hh.ru/vacancies', params={'text': '', 'per_page': quantity, 'employer_id': emps[employer]})#, 'employer_id': (3529, 78638, 1740, 1122462, 3388)})
+    with open('vacs.json', 'w') as f:
+        json.dump(response.json(), f)
 
     connection = psycopg2.connect(
        host='localhost',
@@ -20,9 +22,35 @@ def get_vacs(data, employer='сбер', quantity=100):
     )
     cursor = connection.cursor()
 
-    if data == 'new':
-        cursor.execute(f'INSERT INTO employers(name, number_of_vacancies) VALUES {employer,quantity}')
+    with open('vacs.json') as f:
+        vacs = json.load(f)
+
+    cursor.execute(f"DELETE FROM vacancies WHERE employer_name = '{employer}'")
+    connection.commit()
+    counter = 0
+    for i in vacs['items']:
+        if i['salary'] is None:
+            pass
+        elif i['salary']['from'] is None:
+            pass
+        else:
+            counter += 1
+            cursor.execute(f"INSERT INTO vacancies(name,salary,url,employer_name) VALUES ('{i['name']}', '{i['salary']['from']}', '{i['alternate_url']}', '{employer}')")
+            connection.commit()
+
+    cursor.execute('SELECT * FROM employers')
+    rows = cursor.fetchall()
+    if not rows:
+        cursor.execute(f"INSERT INTO employers(employer_name, number_of_vacancies) VALUES ('{employer}','{counter}')")
         connection.commit()
+    else:
+        cursor.execute(f"SELECT employer_name FROM employers WHERE employer_name = '{employer}'")
+        names = cursor.fetchall()
+        if not names:
+            cursor.execute(f"INSERT INTO employers(employer_name, number_of_vacancies) VALUES ('{employer}','{counter}')")
+            connection.commit()
+        else:
+            pass
 
     cursor.execute('SELECT * FROM employers')
     rows = cursor.fetchall()
@@ -33,4 +61,12 @@ def get_vacs(data, employer='сбер', quantity=100):
     connection.close()
 
 
-get_vacs('saved')
+def find_employer():
+    response = requests.get('https://api.hh.ru/vacancies', params={'text': '', 'per_page': 50})#, 'employer_id': (3529)})
+    resp = response.json()
+    for r in resp['items']:
+        print(r['employer'])
+
+
+#get_vacs()
+find_employer()
