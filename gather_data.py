@@ -3,9 +3,8 @@ import requests
 import psycopg2
 
 
-def get_vacs(employer='Сбер', quantity=100):
-    employer = employer.lower()
-    employer = employer.capitalize()
+def get_vacs(employer='Газпром банк', quantity=100):
+    employer = employer.lower().capitalize()
     emps = {'Сбер': 3529,
             'Т-банк': 78638,
             'Газпром банк': 3388}
@@ -68,5 +67,5 @@ def find_employer():
         print(r['employer'])
 
 
-#get_vacs()
-find_employer()
+get_vacs()
+#find_employer()
