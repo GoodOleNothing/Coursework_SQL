@@ -2,14 +2,21 @@ import json
 import requests
 import psycopg2
 
+"""Служебный скрипт для заполнения базы данных"""
+def get_vacs(employer='Ozon', quantity=100):
+    emps = {'СБЕР': 3529,
+            'Т-Банк': 78638,
+            'Газпром Банк': 3388,
+            'Альфа-Банк': 80,
+            'Банк ВТБ (ПАО)': 4181,
+            'Точка': 2324020,
+            'Почта Банк': 1049556,
+            'Россельхозбанк': 58320,
+            'Совкомбанк': 7944,
+            'Ozon': 2180}
 
-def get_vacs(employer='Газпром банк', quantity=100):
-    employer = employer.lower().capitalize()
-    emps = {'Сбер': 3529,
-            'Т-банк': 78638,
-            'Газпром банк': 3388}
-
-    response = requests.get('https://api.hh.ru/vacancies', params={'text': '', 'per_page': quantity, 'employer_id': emps[employer]})#, 'employer_id': (3529, 78638, 1740, 1122462, 3388)})
+    response = requests.get('https://api.hh.ru/vacancies', params={'per_page': quantity, 'only_with_salary': True,
+                                                                   'employer_id': emps[employer]})
     with open('vacs.json', 'w') as f:
         json.dump(response.json(), f)
 
@@ -61,7 +68,7 @@ def get_vacs(employer='Газпром банк', quantity=100):
 
 
 def find_employer():
-    response = requests.get('https://api.hh.ru/vacancies', params={'text': '', 'per_page': 50})#, 'employer_id': (3529)})
+    response = requests.get('https://api.hh.ru/vacancies', params={'text': 'Мобильный менеджер в пространство Ozon Банка', 'per_page': 100})#, 'employer_id': 2324020})
     resp = response.json()
     for r in resp['items']:
         print(r['employer'])
